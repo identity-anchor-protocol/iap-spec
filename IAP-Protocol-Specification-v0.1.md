@@ -1,4 +1,4 @@
-# IAP Protocol Specification v0.1 (Stable)
+# IAP Protocol Specification v0.1
 
 # 1. Introduction
 
