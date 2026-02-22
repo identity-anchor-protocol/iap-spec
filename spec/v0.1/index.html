@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IAP Protocol Specification v0.1</title>
+    <meta name="description" content="Identity Anchor Protocol Specification v0.1" />
+    <style>
+      :root {
+        --bg: #f7f8fa;
+        --surface: #ffffff;
+        --text: #0f2135;
+        --muted: #4f6172;
+        --border: #d8e0e8;
+        --primary: #173a66;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+      }
+      .container { width: min(980px, 92vw); margin: 0 auto; }
+      header { background: var(--surface); border-bottom: 1px solid var(--border); }
+      .head-row { padding: 1rem 0; display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; }
+      .brand { margin: 0; font-weight: 700; }
+      .links { display: flex; gap: 1rem; }
+      .links a { color: var(--primary); text-decoration: none; font-weight: 600; }
+      main { padding: 1.6rem 0 2.4rem; }
+      article { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+      h1, h2, h3 { letter-spacing: -0.02em; }
+      h1 { margin-top: 0; }
+      h2 { margin-top: 1.6rem; }
+      h3 { margin-top: 1.2rem; }
+      p { margin: 0.6rem 0; }
+      ul { margin: 0.5rem 0 0.9rem 1.1rem; padding: 0; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+      pre { background: #0f1822; color: #d8edf7; padding: 0.85rem; border-radius: 10px; overflow-x: auto; border: 1px solid #223349; }
+      hr { border: 0; border-top: 1px solid var(--border); margin: 1.1rem 0; }
+      footer { color: var(--muted); font-size: 0.92rem; padding-bottom: 2rem; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container head-row">
+        <p class="brand">Identity Anchor Protocol Spec</p>
+        <nav class="links" aria-label="Specification links">
+          <a href="https://github.com/identity-anchor-protocol/iap-spec">Repository</a>
+          <a href="https://github.com/identity-anchor-protocol/iap-spec/blob/main/IAP-Protocol-Specification-v0.1.md">Source Markdown</a>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <div class="container">
+        <article>
+          <h1 id="iap-protocol-specification-v0-1">IAP Protocol Specification v0.1</h1>
+          <h1 id="1-introduction">1. Introduction</h1>
+          <h2 id="1-1-purpose">1.1 Purpose</h2>
+          <p>
+          The Identity Anchor Protocol (IAP) defines a cryptographic standard for establishing and verifying the persistent identity and continuity of autonomous software agents.
+          </p>
+          <p>
+          The protocol enables:
+          </p>
+          <ul>
+          <li>Deterministic identity derivation</li>
+          <li>Cryptographically verifiable continuity attestations</li>
+          <li>Canonical lineage declarations</li>
+          <li>Third-party certificate verification</li>
+          </ul>
+          <p>
+          IAP does not define agent behavior, intelligence, governance, or evaluation criteria.
+          </p>
+          <p>
+          It defines only identity and continuity primitives.
+          </p>
+          <hr />
+          <h1 id="2-terminology">2. Terminology</h1>
+          <p>
+          <strong>Agent</strong>
+          A software system capable of autonomous or semi-autonomous operation.
+          </p>
+          <p>
+          <strong>Agent Keypair</strong>
+          An Ed25519 public/private keypair generated and controlled by the agent runtime.
+          </p>
+          <p>
+          <strong>agent_id</strong>
+          A deterministic identifier derived from the agent’s public key.
+          </p>
+          <p>
+          <strong>Registry</strong>
+          An implementation of an IAP Certificate Authority (CA) issuing protocol-compliant certificates.
+          </p>
+          <p>
+          <strong>Certificate</strong>
+          A structured, signed document conforming to this specification.
+          </p>
+          <p>
+          <strong>Continuity Event</strong>
+          An attested memory state snapshot anchored to identity.
+          </p>
+          <p>
+          <strong>Lineage Declaration</strong>
+          A signed statement linking an agent identity to a parent identity.
+          </p>
+          <hr />
+          <h1 id="3-identity-derivation">3. Identity Derivation</h1>
+          <h2 id="3-1-key-algorithm">3.1 Key Algorithm</h2>
+          <p>
+          Agents MUST use:
+          </p>
+          <ul>
+          <li>Ed25519 keypairs</li>
+          </ul>
+          <p>
+          Private keys MUST remain under agent control and MUST NOT be transmitted to registries.
+          </p>
+          <hr />
+          <h2 id="3-2-agent-id-format">3.2 agent_id Format</h2>
+          <p>
+          agent_id is derived as:
+          </p>
+          <pre><code>
+          agent_id = &quot;ed25519:&quot; + base32(sha256(public_key_bytes))[0:32]
+          </code></pre>
+          <ul>
+          <li>Prefix indicates key algorithm.</li>
+          <li>Hash truncated to fixed-length.</li>
+          <li>Encoding MUST be lowercase.</li>
+          <li>Deterministic derivation required.</li>
+          </ul>
+          <p>
+          This ensures:
+          </p>
+          <ul>
+          <li>No central assignment authority</li>
+          <li>Self-certifying identity</li>
+          </ul>
+          <hr />
+          <h1 id="4-canonicalization-rules">4. Canonicalization Rules</h1>
+          <p>
+          All signed payloads MUST:
+          </p>
+          <ul>
+          <li>Use canonical JSON</li>
+          <li>Sorted keys lexicographically</li>
+          <li>UTF-8 encoding</li>
+          <li>No whitespace</li>
+          <li>Deterministic serialization</li>
+          <li>Floats prohibited (unless explicitly defined)</li>
+          </ul>
+          <p>
+          Canonical bytes are the input for signing.
+          </p>
+          <hr />
+          <h2 id="5-certificate-authority-model-v0-1">5. Certificate Authority Model (v0.1)</h2>
+          <ul>
+          <li>IAP certificates are issued and signed by a Registry implementing this specification.</li>
+          </ul>
+          <ul>
+          <li>Each certificate MUST be verifiable using the public key of the issuing Registry.</li>
+          </ul>
+          <ul>
+          <li>Multiple registries MAY exist.</li>
+          </ul>
+          <ul>
+          <li>Certificate validation is performed against the public key of the Registry that issued the certificate.</li>
+          </ul>
+          <p>
+          This specification does not define inter-registry trust relationships.
+          </p>
+          <hr />
+          <h2 id="6-certificate-structure-common-fields">6. Certificate Structure (Common Fields)</h2>
+          <p>
+          All certificates MUST include:
+          </p>
+          <ul>
+          <li>certificate_version = Protocol version (e.g., &quot;IAP-0.1&quot;)</li>
+          <li>certificate_type = Schema identifier (e.g., &quot;IAP-Continuity-0.2&quot;)</li>
+          <li>agent_id</li>
+          <li>issued_at (ISO8601 UTC)</li>
+          <li>registry_id (MUST be a stable, unique string identifier defined by the issuing Registry)</li>
+          <li>registry_signature_b64</li>
+          </ul>
+          <p>
+          Optional:
+          </p>
+          <pre><code>
+          &quot;metadata&quot;: {
+            &quot;agent_name&quot;: &quot;string (optional)&quot;,
+            &quot;developer_alias&quot;: &quot;string (optional)&quot;,
+            &quot;agent_version&quot;: &quot;string (optional)&quot;
+          }
+          </code></pre>
+          <p>
+          Metadata:
+          </p>
+          <ul>
+          <li>MUST NOT influence identity derivation</li>
+          <li>MUST be signed as part of certificate payload</li>
+          <li>MAY be omitted entirely</li>
+          </ul>
+          <p>
+          Certificates are immutable once issued.
+          </p>
+          <hr />
+          <h2 id="7-certificate-types">7. Certificate Types</h2>
+          <h3 id="7-1-identity-anchor-certificate">7.1 Identity Anchor Certificate</h3>
+          <p>
+          certificate_type = &quot;IAP-Identity-0.1&quot;
+          </p>
+          <p>
+          Required:
+          </p>
+          <ul>
+          <li>agent_public_key_b64</li>
+          </ul>
+          <p>
+          Purpose:
+          </p>
+          <p>
+          Establishes binding between agent_id and public key at time of issuance.
+          </p>
+          <p>
+          An Identity Anchor certificate MUST exist prior to issuance of Continuity or Lineage certificates for a given agent_id.
+          </p>
+          <hr />
+          <h3 id="7-2-continuity-certificate">7.2 Continuity Certificate</h3>
+          <p>
+          certificate_type = &quot;IAP-Continuity-0.2&quot;
+          </p>
+          <p>
+          Required:
+          </p>
+          <ul>
+          <li>memory_root</li>
+          <li>ledger_sequence (MUST be a non-negative integer)</li>
+          </ul>
+          <p>
+          - It MUST strictly increase for each successive Continuity Certificate issued for a given agent_id.
+          </p>
+          <p>
+          Optional:
+          </p>
+          <ul>
+          <li>payment_reference</li>
+          </ul>
+          <p>
+          Purpose:
+          </p>
+          <p>
+          Attests that a specific identity-bound memory state existed at time of issuance.
+          </p>
+          <p>
+          Agent MUST sign continuity request payload.
+          Registry MUST verify signature before issuance.
+          </p>
+          <hr />
+          <h3 id="7-3-lineage-certificate">7.3 Lineage Certificate</h3>
+          <p>
+          certificate_type = &quot;IAP-Lineage-0.1&quot;
+          </p>
+          <p>
+          Optional:
+          </p>
+          <ul>
+          <li>parent_agent_id</li>
+          <li>fork_event_hash</li>
+          </ul>
+          <p>
+          Purpose:
+          </p>
+          <p>
+          Declares canonical lineage relationship between identities.
+          </p>
+          <p>
+          Agent MUST sign lineage declaration.
+          Registry MUST verify signature before issuance.
+          </p>
+          <hr />
+          <h2 id="8-signing-rules">8. Signing Rules</h2>
+          <h3 id="8-1-agent-side-signing">8.1 Agent-Side Signing</h3>
+          <p>
+          Requests for:
+          </p>
+          <ul>
+          <li>Continuity Certificate</li>
+          <li>Lineage Certificate</li>
+          </ul>
+          <p>
+          MUST include:
+          </p>
+          <ul>
+          <li>Canonicalized request payload</li>
+          <li>agent_signature_b64</li>
+          </ul>
+          <p>
+          Registry MUST verify before certificate issuance:
+          </p>
+          <ul>
+          <li>Signature validity</li>
+          <li>agent_id derivation correctness</li>
+          </ul>
+          <hr />
+          <h3 id="8-2-registry-signing">8.2 Registry Signing</h3>
+          <p>
+          All certificates MUST be signed with:
+          </p>
+          <ul>
+          <li>Registry Ed25519 private key</li>
+          </ul>
+          <p>
+          Verification requires:
+          </p>
+          <ul>
+          <li>Canonical serialization (excluding registry_signature_b64)</li>
+          <li>Registry public key</li>
+          </ul>
+          <p>
+          The signature MUST be computed over the canonical JSON representation of the certificate excluding the <code>registry_signature_b64</code> field.
+          </p>
+          <hr />
+          <h1 id="9-verification">9. Verification</h1>
+          <p>
+          To verify a certificate:
+          </p>
+          <p>
+          1. Canonicalize certificate payload (excluding signature field).
+          2. Verify registry_signature against registry public key.
+          3. Confirm certificate_type and version.
+          4. If the certificate is an Identity Anchor certificate, validate that agent_id matches the public key derivation rules.
+          5. For other certificate types, validate agent_id using a valid Identity Anchor certificate.
+          6. (Optional) Validate lineage references.
+          </p>
+          <p>
+          Verification MUST NOT require registry availability.
+          </p>
+          <p>
+          Offline verification MUST be possible.
+          </p>
+          <p>
+          For certificates other than Identity Anchor, verification of <code>agent_id</code> requires access to a valid Identity Anchor certificate binding the <code>agent_id</code> to a public key.
+          </p>
+          <hr />
+          <h2 id="10-derived-properties">10. Derived Properties</h2>
+          <p>
+          The protocol does not define an &quot;age certificate.&quot;
+          </p>
+          <p>
+          Agent age MAY be derived as:
+          </p>
+          <pre><code>
+          agent_age = now - first Identity Anchor issued_at
+          </code></pre>
+          <p>
+          Continuity count MAY be derived from number of valid continuity certificates.
+          </p>
+          <p>
+          These are emergent properties, not certificate types.
+          </p>
+          <hr />
+          <h2 id="11-extension-rules">11. Extension Rules</h2>
+          <p>
+          Future certificate types MUST:
+          </p>
+          <ul>
+          <li>Introduce new certificate_type string</li>
+          <li>Specify version number</li>
+          <li>Preserve backward compatibility</li>
+          <li>Avoid field mutation in existing types</li>
+          </ul>
+          <p>
+          Breaking changes require new major protocol version.
+          </p>
+          <hr />
+          <h2 id="12-security-considerations">12. Security Considerations</h2>
+          <ul>
+          <li>Private keys MUST remain agent-controlled.</li>
+          <li>Registry signing key MUST be protected.</li>
+          <li>Replay protection SHOULD be implemented via nonce mechanism.</li>
+          </ul>
+          <p>
+          - Registries SHOULD implement replay protection for agent-signed requests using nonces or equivalent mechanisms.
+          </p>
+          <ul>
+          <li>Canonicalization errors invalidate signatures.</li>
+          <li>Offline verification MUST remain possible.</li>
+          </ul>
+          <hr />
+          <h1 id="13-minimal-certificate-examples-non-normative">13. Minimal Certificate Examples (Non-Normative)</h1>
+          <p>
+          These examples are illustrative and non-normative.
+          </p>
+          <p>
+          Signature values are placeholders.
+          </p>
+          <hr />
+          <h2 id="13-1-identity-anchor-certificate-example">13.1 Identity Anchor Certificate Example</h2>
+          <pre><code>
+          {
+            &quot;certificate_version&quot;: &quot;IAP-0.1&quot;,
+            &quot;certificate_type&quot;: &quot;IAP-Identity-0.1&quot;,
+            &quot;agent_id&quot;: &quot;ed25519:7k3h2n9x4v8p6q1t5z0m2a7b3c4d5e6f&quot;,
+            &quot;agent_public_key_b64&quot;: &quot;MCowBQYDK2VwAyEAzR5F6lW7g3kL0nQx8vYpR1xZb6nJ9t4wK2aX3fQeYpI=&quot;,
+            &quot;issued_at&quot;: &quot;2026-03-01T12:00:00Z&quot;,
+            &quot;registry_id&quot;: &quot;iap-registry-main&quot;,
+            &quot;metadata&quot;: {
+              &quot;agent_name&quot;: &quot;Atlas&quot;,
+              &quot;developer_alias&quot;: &quot;dirk-dev&quot;
+            },
+            &quot;registry_signature_b64&quot;: &quot;MEUCIQDxExampleSignatureValueNotReal==&quot;
+          }
+          </code></pre>
+          <hr />
+          <h2 id="13-2-continuity-certificate-example">13.2 Continuity Certificate Example</h2>
+          <pre><code>
+          {
+            &quot;certificate_version&quot;: &quot;IAP-0.1&quot;,
+            &quot;certificate_type&quot;: &quot;IAP-Continuity-0.2&quot;,
+            &quot;agent_id&quot;: &quot;ed25519:7k3h2n9x4v8p6q1t5z0m2a7b3c4d5e6f&quot;,
+            &quot;memory_root&quot;: &quot;60ce3665b0e4d5f8a2c3e7f9b1a4d6c8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b&quot;,
+            &quot;ledger_sequence&quot;: 42,
+            &quot;issued_at&quot;: &quot;2026-03-15T09:30:00Z&quot;,
+            &quot;payment_reference&quot;: &quot;lnbits:9f84d2c1a6b3e7f0&quot;,
+            &quot;registry_id&quot;: &quot;iap-registry-main&quot;,
+            &quot;metadata&quot;: {
+              &quot;agent_name&quot;: &quot;Atlas&quot;,
+              &quot;agent_version&quot;: &quot;1.2.3&quot;
+            },
+            &quot;registry_signature_b64&quot;: &quot;MEQCIFExampleSignatureValueNotReal==&quot;
+          }
+          </code></pre>
+          <hr />
+          <h2 id="13-3-lineage-certificate-example">13.3 Lineage Certificate Example</h2>
+          <pre><code>
+          {
+            &quot;certificate_version&quot;: &quot;IAP-0.1&quot;,
+            &quot;certificate_type&quot;: &quot;IAP-Lineage-0.1&quot;,
+            &quot;agent_id&quot;: &quot;ed25519:7k3h2n9x4v8p6q1t5z0m2a7b3c4d5e6f&quot;,
+            &quot;parent_agent_id&quot;: &quot;ed25519:2sjv44qjwe6b3g6fnnrzv5yq63qu74xc&quot;,
+            &quot;fork_event_hash&quot;: &quot;a94f5374b8c2d9e6f1a0b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e&quot;,
+            &quot;issued_at&quot;: &quot;2026-03-20T14:10:00Z&quot;,
+            &quot;registry_id&quot;: &quot;iap-registry-main&quot;,
+            &quot;registry_signature_b64&quot;: &quot;MEUCIQExampleSignatureValueNotReal==&quot;
+          }
+          </code></pre>
+          <p>
+          For signature verification, the certificate payload MUST be canonicalized excluding the <code>registry_signature_b64</code> field. The signature is computed over the canonical JSON representation of all remaining fields.
+          </p>
+          <hr />
+        </article>
+      </div>
+    </main>
+    <footer>
+      <div class="container">
+        Version pinned page: <code>/spec/v0.1/</code>
+      </div>
+    </footer>
+  </body>
+</html>
