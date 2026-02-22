@@ -50,7 +50,7 @@ Required before issuing any other certificate type.
 Attests that a specific `memory_root` is bound to an identity
 under a strictly monotonic `ledger_sequence`.
 
-Enables verification of persistent identity across sessions.
+Enables verification of persistent identity across sessions / time.
 
 ---
 
