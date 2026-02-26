@@ -7,6 +7,7 @@
 ## 1.1 Purpose
 
 The Identity Anchor Protocol (IAP) defines a cryptographic standard for establishing and verifying persistent identity and continuity of autonomous software agents.
+The protocol enables tamper-evident tracking of agent state evolution for debugging, audit, and reproducibility purposes.
 
 The protocol provides:
 
@@ -221,6 +222,10 @@ Establishes binding between `agent_id` and public key.
 
 `certificate_type = "IAP-Continuity-0.2"`
 
+Version note:
+`IAP-Continuity-0.2` is retained for compatibility with the deployed v0.1.x ecosystem and existing verification vectors.
+The protocol certificate version remains `IAP-0.1`.
+
 Required:
 
 * `memory_root`
@@ -344,6 +349,7 @@ highest ledger_sequence
 * Clock-skew tolerance SHOULD be defined by registry policy.
 * Canonicalization errors invalidate signatures.
 * Offline verification MUST remain possible for baseline checks.
+* Mutation of historical AMCS events invalidates continuity verification and constitutes detectable state drift.
 
 ---
 
@@ -372,9 +378,19 @@ It does NOT provide:
 * Reputation scoring
 * Governance enforcement
 * Mandatory blockchain anchoring
+* Deterministic inference guarantees
+* Any modification of LLM sampling or model stochastic behavior
 
 ---
 
 # Summary Positioning
 
 IAP v0.1.1 with AMCS-0.1 defines a minimal, deterministic, cryptographically verifiable continuity layer for autonomous agents, with offline-verifiable certificate trust.
+
+---
+
+# 15. Stability Principle (v0.1.x)
+
+Protocol changes should be minimized during adoption.
+CLI UX, implementation details, and documentation may evolve.
+Cryptographic core rules (key derivation, canonicalization, Merkle derivation, signing, replay protection) remain stable unless a critical security issue is discovered.
